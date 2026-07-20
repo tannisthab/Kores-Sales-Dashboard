@@ -51,13 +51,14 @@ def _parse_month_token(token: str):
 
 
 @st.cache_data(show_spinner=False)
-def load_data(path: str) -> pd.DataFrame:
+def load_data(file) -> pd.DataFrame:
     """
-    Loads the SalesData.xlsx file (sheet 'Data 1'), cleans column names,
+    Loads uploaded Excel file (sheet 'Data 1'), cleans column names,
     and derives Year / MonthNum / MonthLabel / SortKey / Quarter columns
     from the raw Month text (e.g. "Aug'24").
     """
-    df = pd.read_excel(path, sheet_name="Data 1")
+
+    df = pd.read_excel(file, sheet_name="Data 1")
 
     # Normalise column names (strip whitespace)
     df.columns = [str(c).strip() for c in df.columns]
