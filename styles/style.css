@@ -1,0 +1,419 @@
+/* =========================================================
+   KORES INDIA LTD. — Sales Trend Analysis Dashboard
+   Corporate Blue & White Theme
+   ========================================================= */
+
+:root {
+    --kores-navy: #0A2E5C;
+    --kores-blue: #0056A6;
+    --kores-blue-light: #E8F1FB;
+    --kores-accent: #1E88E5;
+    --kores-green: #1E8E3E;
+    --kores-red: #D93025;
+    --kores-grey: #5F6368;
+    --kores-border: #E3E8EF;
+    --kores-bg: #F5F8FC;
+}
+/* ==========================================================
+   POWER BI LAYOUT
+   ========================================================== */
+
+.dashboard-wrapper{
+    width:100%;
+}
+
+.left-panel{
+
+    position:sticky;
+
+    top:15x;
+
+    max-height:85vh;
+
+    overflow-y:auto;
+
+    background:#FFFFFF;
+
+    border-radius:12px;
+
+    padding:16px;
+
+    border:1px solid #E5E7EB;
+
+    box-shadow:0 6px 20px rgba(0,0,0,0.08);
+
+}
+/* ---- Global app background ---- */
+.stApp {
+    background-color: var(--kores-bg);
+}
+
+/* ---- Trim default Streamlit padding ---- */
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 1.5rem;
+    padding-left: 1.8rem;
+    padding-right: 1.8rem;
+    max-width: 100%;
+}
+
+/* Hide default streamlit chrome */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header[data-testid="stHeader"] {background: rgba(0,0,0,0); height: 0px;}
+
+/* ---- Header bar ---- */
+.kores-header {
+    background: linear-gradient(90deg, var(--kores-navy) 0%, var(--kores-blue) 100%);
+    border-radius: 1px;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 2px 10px rgba(10,46,92,0.18);
+    margin-bottom: 18px;
+}
+
+.kores-header-title {
+    color: #FFFFFF;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    margin: 0;
+    line-height: 1.15;
+}
+
+.kores-header-subtitle {
+    color: #CFE2FA;
+    font-size: 14px;
+    font-weight: 400;
+    margin: 2px 0 0 0;
+}
+
+/* ---- Section headers ---- */
+.section-title {
+    color: var(--kores-navy);
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--kores-blue-light);
+}
+
+/* ---- Left fixed filter panel ---- */
+.filter-panel {
+
+    background:transparent;
+
+    border:none;
+
+    box-shadow:none;
+
+    padding:0;
+
+    margin:0;
+
+}
+
+.filter-panel-title{
+
+    font-size:19px;
+
+    font-weight:700;
+
+    color:var(--kores-navy);
+
+    margin-bottom:18px;
+
+    text-align:center;
+
+    border-bottom:2px solid #EEF2F7;
+
+    padding-bottom:12px;
+
+}
+
+.filter-info-box{
+
+    margin-top:24px;
+
+    background:#F5F9FF;
+
+    border-left:5px solid var(--kores-blue);
+    border-right:5px solid var(--kores-blue);
+    border-bottom:5px solid var(--kores-blue);
+    border-top:5px solid var(--kores-blue);
+
+    border-radius:12px;
+
+    padding:16px;
+
+}
+
+.filter-info-label {
+    color: var(--kores-grey);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin: 0;
+}
+
+.filter-info-value {
+    color: var(--kores-navy);
+    font-size: 13.5px;
+    font-weight: 600;
+    margin: 2px 0 10px 0;
+    word-wrap: break-word;
+    line-height: 1.35;
+}
+
+/* ---- KPI Cards ---- */
+.kpi-card {
+    background: #FFFFFF;
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 2px 10px rgba(10,46,92,0.08);
+    border: 1px solid var(--kores-border);
+    border-top: 4px solid var(--kores-blue);
+    height: 118px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: transform 0.15s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(10,46,92,0.14);
+}
+
+.kpi-icon {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+.kpi-label {
+    color: var(--kores-grey);
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 4px 0;
+}
+
+.kpi-value {
+    color: var(--kores-navy);
+    font-size: 16px;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1.1;
+}
+
+.kpi-sub {
+    color: var(--kores-grey);
+    font-size: 11.5px;
+    font-weight: 500;
+    margin-top: 3px;
+}
+
+.kpi-positive { color: var(--kores-green); }
+.kpi-negative { color: var(--kores-red); }
+
+/* ---- Chart card wrapper ---- */
+.chart-card {
+    background: #FFFFFF;
+    border-radius: 12px;
+    padding: 14px 16px 6px 16px;
+    box-shadow: 0 1px 6px rgba(10,46,92,0.06);
+    border: 1px solid var(--kores-border);
+    margin-bottom: 14px;
+}
+
+.chart-title {
+    color: var(--kores-navy);
+    font-size: 15.5px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.chart-subtitle {
+    color: var(--kores-grey);
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+/* ---- Insights panel ---- */
+.insight-card {
+    background: var(--kores-blue-light);
+    border-radius: 12px;
+    padding: 16px 18px;
+    border: 1px solid #D3E4F7;
+    height: 100%;
+    margin-bottom: 14px;
+}
+
+.insight-title {
+    color: var(--kores-navy);
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.insight-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px dashed #C7DCF3;
+    font-size: 12.5px;
+}
+
+.insight-row:last-of-type {
+    border-bottom: none;
+}
+
+.insight-row-label {
+    color: var(--kores-grey);
+    font-weight: 600;
+}
+
+.insight-row-value {
+    color: var(--kores-navy);
+    font-weight: 700;
+    text-align: right;
+}
+
+.insight-note {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #C7DCF3;
+    color: #1F3A5F;
+    font-size: 12.5px;
+    line-height: 1.55;
+}
+
+.insight-reco {
+    margin-top: 8px;
+    background: #FFFFFF;
+    border-left: 3px solid var(--kores-blue);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--kores-navy);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+/* ---- Forecast highlight box ---- */
+.forecast-box {
+    background: linear-gradient(135deg, var(--kores-navy) 0%, var(--kores-blue) 100%);
+    border-radius: 12px;
+    padding: 18px 20px;
+    color: #FFFFFF;
+    box-shadow: 0 2px 10px rgba(10,46,92,0.18);
+}
+
+.forecast-value {
+    font-size: 30px;
+    font-weight: 800;
+    margin: 4px 0;
+}
+
+.forecast-label {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #CFE2FA;
+    font-weight: 600;
+}
+
+.forecast-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+/* ---- Sticky left filter panel (stays fixed while scrolling charts) ---- */
+
+
+/* ---- Divider ---- */
+.kores-divider {
+    height: 1px;
+    background: var(--kores-border);
+    margin: 6px 0 18px 0;
+    border: none;
+}
+
+/* Streamlit selectbox label styling */
+label[data-testid="stWidgetLabel"] p {
+    color: var(--kores-navy) !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}
+
+/* Radio buttons (year selector) inline */
+div[role="radiogroup"] {
+    gap: 4px;
+}
+/* ===========================
+   AI BUSINESS CONSULTANT
+=========================== */
+
+.ai-health-card{
+background:#ffffff;
+padding:25px;
+border-radius:12px;
+border:1px solid #dfe6ef;
+box-shadow:0 2px 8px rgba(0,0,0,0.08);
+margin-bottom:20px;
+text-align:center;
+}
+
+.ai-section{
+background:white;
+padding:20px;
+border-radius:10px;
+border:1px solid #E3E8EF;
+margin-bottom:15px;
+box-shadow:0 1px 5px rgba(0,0,0,0.06);
+}
+
+.ai-action{
+background:#E8F5E9;
+padding:12px;
+border-left:5px solid #1E8E3E;
+border-radius:8px;
+margin-bottom:10px;
+font-weight:600;
+}
+/* ===================================
+   SCROLLBAR
+   =================================== */
+
+.left-panel::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+.left-panel::-webkit-scrollbar-thumb{
+
+    background:#BFC7D5;
+
+    border-radius:10px;
+
+}
+
+.left-panel::-webkit-scrollbar-track{
+
+    background:transparent;
+
+}
