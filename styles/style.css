@@ -214,8 +214,9 @@ header[data-testid="stHeader"] {background: rgba(0,0,0,0); height: 0px;}
     color:#0A2E5C;
     line-height:1.2;
 
-    white-space:normal;
-    word-break:break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;   /* optional */
 }
 
 .kpi-sub{
