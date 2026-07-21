@@ -133,9 +133,9 @@ def render_summary_cards(filtered_df: pd.DataFrame) -> dict:
     # ===========================
     # Row 3 (centered card)
     # ===========================
-    left, center, right = st.columns([1, 2, 1])
+    row3 = st.columns(3)
 
-    with center:
+    with row3[0]:
         icon, label, value, sub, sub_class, tooltip = card_defs[6]
         st.markdown(
             _kpi_card(icon, label, value, sub, sub_class, tooltip),
