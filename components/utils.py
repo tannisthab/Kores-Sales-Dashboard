@@ -237,3 +237,31 @@ def format_inr(value) -> str:
         s = ",".join(groups + [last3])
 
     return f"{'-' if is_negative else ''}₹{s}"
+
+def format_inr_short(value) -> str:
+    """
+    Formats numbers in Indian business style.
+
+    Examples:
+    125000      -> ₹1.25 L
+    131274025   -> ₹13.13 Cr
+    """
+
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+
+    negative = value < 0
+    value = abs(value)
+
+    if value >= 10000000:          # 1 Crore
+        text = f"₹{value/10000000:.2f} Cr"
+    elif value >= 100000:          # 1 Lakh
+        text = f"₹{value/100000:.2f} L"
+    elif value >= 1000:
+        text = f"₹{value/1000:.2f} K"
+    else:
+        text = f"₹{value:.0f}"
+
+    return f"-{text}" if negative else text
