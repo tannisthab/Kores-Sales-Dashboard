@@ -1,24 +1,23 @@
 """
 charts.py
 ---------
-Builds every Plotly figure used in the dashboard:
-  1. Sales Trend (smooth line, year filter, peak/low highlights, avg line)
-  2. Monthly Sales Comparison (conditional colour bars)
-  3. Quarterly Sales (quarter-wise totals)
-  4. Month-over-Month Growth %
-  5. Forecast (next month, based on trailing 3-month average)
+Builds every Plotly figure used in the dashboard.
 
-Every function returns a ready-to-render `go.Figure` with a shared
-corporate style (white background, minimal margins, Kores blue palette).
+1. Sales Trend
+2. Monthly Comparison
+3. Quarterly Sales
+4. Month-over-Month Growth
+5. Forecast
 """
 
-import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
 
-# ---------------------------------------------------------------------------
-# Shared palette / layout helpers
-# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# COLORS
+# ---------------------------------------------------------------------
+
 NAVY = "#0A2E5C"
 BLUE = "#0056A6"
 ACCENT = "#1E88E5"
@@ -28,228 +27,645 @@ RED = "#D93025"
 GREY = "#5F6368"
 BG = "#FFFFFF"
 
-BASE_LAYOUT = dict(
-    plot_bgcolor=BG,
-    paper_bgcolor=BG,
-    font=dict(family="Segoe UI, Arial", color=NAVY, size=12),
-    margin=dict(l=36, r=24, t=18, b=36),
-    hoverlabel=dict(bgcolor="white", font_size=12, font_family="Segoe UI"),
-    legend=dict(orientation="h", yanchor="bottom", y=1.0, xanchor="right", x=1.0,
-                font=dict(size=11), bgcolor="rgba(0,0,0,0)"),
-)
+# ---------------------------------------------------------------------
+# NUMBER FORMATTING
+# ---------------------------------------------------------------------
 
-AXIS_STYLE = dict(
-    showgrid=True, gridcolor="#EEF2F7", gridwidth=1,
-    zeroline=False, showline=True, linecolor="#D9E2EC",
-    tickfont=dict(size=11, color=GREY),
-)
+def format_lakh(value):
+    """
+    95000      -> 0.95L
+    1250000    -> 12.5L
+    23500000   -> 2.35Cr
+    """
+
+    value = float(value)
+
+    if abs(value) >= 10000000:
+        return f"₹{value/10000000:.2f} Cr"
+
+    return f"₹{value/100000:.2f} L"
 
 
-def _apply_layout(fig: go.Figure, height: int = 300) -> go.Figure:
-    fig.update_layout(**BASE_LAYOUT, height=height)
-    fig.update_xaxes(**AXIS_STYLE)
-    fig.update_yaxes(**AXIS_STYLE)
+# ---------------------------------------------------------------------
+# AXIS FORMATTING
+# ---------------------------------------------------------------------
+
+def y_axis_format(fig):
+    """
+    Since charts use values divided by 100000,
+    show axis in Lakhs.
+    """
+
+    fig.update_yaxes(
+        ticksuffix=" L",
+        separatethousands=True
+    )
+
     return fig
 
 
+# ---------------------------------------------------------------------
+# BASE LAYOUT
+# ---------------------------------------------------------------------
+
+BASE_LAYOUT = dict(
+
+    plot_bgcolor=BG,
+
+    paper_bgcolor=BG,
+
+    font=dict(
+        family="Segoe UI",
+        size=12,
+        color=NAVY,
+    ),
+
+    margin=dict(
+        l=35,
+        r=25,
+        t=20,
+        b=35,
+    ),
+
+    hoverlabel=dict(
+        bgcolor="white",
+        font_size=12,
+        font_family="Segoe UI",
+    ),
+
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.01,
+        xanchor="right",
+        x=1,
+        font=dict(size=11),
+        bgcolor="rgba(0,0,0,0)",
+    ),
+)
+
+AXIS_STYLE = dict(
+
+    showgrid=True,
+
+    gridcolor="#EEF2F7",
+
+    gridwidth=1,
+
+    zeroline=False,
+
+    showline=True,
+
+    linecolor="#D9E2EC",
+
+    tickfont=dict(
+        size=11,
+        color=GREY,
+    ),
+)
+
+
+def _apply_layout(fig: go.Figure, height=320):
+
+    fig.update_layout(
+        **BASE_LAYOUT,
+        height=height,
+    )
+
+    fig.update_xaxes(**AXIS_STYLE)
+
+    fig.update_yaxes(**AXIS_STYLE)
+
+    return fig
 # ---------------------------------------------------------------------------
 # 1. Sales Trend
 # ---------------------------------------------------------------------------
 def sales_trend_chart(monthly_df: pd.DataFrame, selected_year=None) -> go.Figure:
-    """Smooth sales trend line with peak/low highlights and an average line."""
+    """
+    Smooth sales trend line with year filter.
+    Displays values in Lakhs while hover shows full amount.
+    """
+
     data = monthly_df.copy()
+
     if selected_year and selected_year != "All Years":
         data = data[data["Year"] == selected_year]
+
     data = data.sort_values("SortKey").reset_index(drop=True)
 
     fig = go.Figure()
 
     if data.empty:
-        fig.add_annotation(text="No data available for the selected year",
-                            showarrow=False, font=dict(color=GREY))
+        fig.add_annotation(
+            text="No data available",
+            showarrow=False,
+            font=dict(color=GREY)
+        )
         return _apply_layout(fig, height=340)
 
     avg_val = data["Sales"].mean()
+
     max_idx = data["Sales"].idxmax()
     min_idx = data["Sales"].idxmin()
 
-    fig.add_trace(go.Scatter(
-        x=data["MonthLabel"], y=data["Sales"],
-        mode="lines+markers",
-        line=dict(color=BLUE, width=3, shape="spline", smoothing=1.1),
-        marker=dict(size=7, color=BLUE, line=dict(width=1, color="white")),
-        name="Monthly Sales",
-        hovertemplate="<b>%{x}</b><br>Sales: ₹%{y:,.0f}<extra></extra>",
-    ))
+    # -----------------------------
+    # Main Trend
+    # -----------------------------
+    fig.add_trace(
+        go.Scatter(
+            x=data["MonthLabel"],
+            y=data["Sales"] / 100000,
+            mode="lines+markers",
+            line=dict(
+                color=BLUE,
+                width=3,
+                shape="spline",
+                smoothing=1.1,
+            ),
+            marker=dict(
+                size=8,
+                color=BLUE,
+                line=dict(width=1, color="white"),
+            ),
+            customdata=data["Sales"],
+            hovertemplate=
+            "<b>%{x}</b><br>"
+            "Sales : ₹%{customdata:,.0f}"
+            "<extra></extra>",
+            name="Sales",
+        )
+    )
 
-    # Average reference line
+    # -----------------------------
+    # Average Line
+    # -----------------------------
     fig.add_hline(
-        y=avg_val, line_dash="dot", line_color=GREY, line_width=1.4,
-        annotation_text=f"Average: ₹{avg_val:,.0f}",
+        y=avg_val / 100000,
+        line_dash="dot",
+        line_color=GREY,
+        annotation_text=f"Average : {format_lakh(avg_val)}",
         annotation_position="top left",
-        annotation_font=dict(size=11, color=GREY),
     )
 
-    # Peak highlight
-    fig.add_trace(go.Scatter(
-        x=[data.loc[max_idx, "MonthLabel"]], y=[data.loc[max_idx, "Sales"]],
-        mode="markers", marker=dict(size=14, color=GREEN, symbol="circle",
-                                     line=dict(width=2, color="white")),
-        name="Peak", hoverinfo="skip", showlegend=True,
-    ))
-    fig.add_annotation(
-        x=data.loc[max_idx, "MonthLabel"], y=data.loc[max_idx, "Sales"],
-        text=f"Peak ₹{data.loc[max_idx,'Sales']:,.0f}", showarrow=True,
-        arrowhead=2, arrowcolor=GREEN, ax=0, ay=-32,
-        font=dict(size=11, color=GREEN, family="Segoe UI"),
+    # -----------------------------
+    # Peak Marker
+    # -----------------------------
+    fig.add_trace(
+        go.Scatter(
+            x=[data.loc[max_idx, "MonthLabel"]],
+            y=[data.loc[max_idx, "Sales"] / 100000],
+            mode="markers",
+            marker=dict(
+                size=15,
+                color=GREEN,
+                line=dict(width=2, color="white"),
+            ),
+            customdata=[data.loc[max_idx, "Sales"]],
+            hovertemplate=
+            "<b>Highest Sales</b><br>"
+            "₹%{customdata:,.0f}"
+            "<extra></extra>",
+            name="Peak",
+        )
     )
 
-    # Lowest highlight
-    fig.add_trace(go.Scatter(
-        x=[data.loc[min_idx, "MonthLabel"]], y=[data.loc[min_idx, "Sales"]],
-        mode="markers", marker=dict(size=14, color=RED, symbol="circle",
-                                     line=dict(width=2, color="white")),
-        name="Lowest", hoverinfo="skip", showlegend=True,
-    ))
     fig.add_annotation(
-        x=data.loc[min_idx, "MonthLabel"], y=data.loc[min_idx, "Sales"],
-        text=f"Low ₹{data.loc[min_idx,'Sales']:,.0f}", showarrow=True,
-        arrowhead=2, arrowcolor=RED, ax=0, ay=32,
-        font=dict(size=11, color=RED, family="Segoe UI"),
+        x=data.loc[max_idx, "MonthLabel"],
+        y=data.loc[max_idx, "Sales"] / 100000,
+        text=format_lakh(data.loc[max_idx, "Sales"]),
+        showarrow=True,
+        arrowcolor=GREEN,
+        arrowhead=2,
+        ax=0,
+        ay=-30,
+        font=dict(color=GREEN),
     )
+
+    # -----------------------------
+    # Lowest Marker
+    # -----------------------------
+    fig.add_trace(
+        go.Scatter(
+            x=[data.loc[min_idx, "MonthLabel"]],
+            y=[data.loc[min_idx, "Sales"] / 100000],
+            mode="markers",
+            marker=dict(
+                size=15,
+                color=RED,
+                line=dict(width=2, color="white"),
+            ),
+            customdata=[data.loc[min_idx, "Sales"]],
+            hovertemplate=
+            "<b>Lowest Sales</b><br>"
+            "₹%{customdata:,.0f}"
+            "<extra></extra>",
+            name="Lowest",
+        )
+    )
+
+    fig.add_annotation(
+        x=data.loc[min_idx, "MonthLabel"],
+        y=data.loc[min_idx, "Sales"] / 100000,
+        text=format_lakh(data.loc[min_idx, "Sales"]),
+        showarrow=True,
+        arrowcolor=RED,
+        arrowhead=2,
+        ax=0,
+        ay=30,
+        font=dict(color=RED),
+    )
+
+    fig.update_yaxes(title="Sales (Lakhs)")
+    fig = y_axis_format(fig)
 
     return _apply_layout(fig, height=340)
-
-
 # ---------------------------------------------------------------------------
-# 2. Monthly Sales Comparison (conditional colour bars)
+# 2. Monthly Sales Comparison
 # ---------------------------------------------------------------------------
 def monthly_comparison_chart(monthly_df: pd.DataFrame) -> go.Figure:
+    """
+    Monthly Sales Comparison
+    Displays values in Lakhs while hover shows full amount.
+    Highest month -> Green
+    Lowest month -> Red
+    Others -> Blue
+    """
+
     data = monthly_df.sort_values("SortKey").reset_index(drop=True)
+
     fig = go.Figure()
 
     if data.empty:
-        fig.add_annotation(text="No data available", showarrow=False, font=dict(color=GREY))
-        return _apply_layout(fig, height=300)
+        fig.add_annotation(
+            text="No data available",
+            showarrow=False,
+            font=dict(color=GREY)
+        )
+        return _apply_layout(fig, height=320)
 
-    max_val = data["Sales"].max()
-    min_val = data["Sales"].min()
+    max_sales = data["Sales"].max()
+    min_sales = data["Sales"].min()
 
-    colors = [
-        GREEN if v == max_val else RED if v == min_val else BLUE
-        for v in data["Sales"]
-    ]
+    colors = []
 
-    fig.add_trace(go.Bar(
-        x=data["MonthLabel"], y=data["Sales"],
-        marker_color=colors, marker_line_width=0,
-        text=[f"₹{v:,.0f}" for v in data["Sales"]],
-        textposition="outside", textfont=dict(size=10, color=NAVY),
-        hovertemplate="<b>%{x}</b><br>Sales: ₹%{y:,.0f}<extra></extra>",
-        showlegend=False,
-    ))
+    for val in data["Sales"]:
+        if val == max_sales:
+            colors.append(GREEN)
+        elif val == min_sales:
+            colors.append(RED)
+        else:
+            colors.append(BLUE)
 
-    fig.update_yaxes(range=[0, max_val * 1.22])
-    return _apply_layout(fig, height=300)
+    fig.add_trace(
+        go.Bar(
+            x=data["MonthLabel"],
+            y=data["Sales"] / 100000,
 
+            marker=dict(
+                color=colors,
+                line=dict(width=0)
+            ),
 
+            customdata=data["Sales"],
+
+            text=[format_lakh(v) for v in data["Sales"]],
+            textposition="outside",
+            textfont=dict(
+                size=10,
+                color=NAVY
+            ),
+
+            hovertemplate=
+            "<b>%{x}</b><br>"
+            "Sales : ₹%{customdata:,.0f}"
+            "<extra></extra>",
+
+            showlegend=False,
+        )
+    )
+
+    fig.update_yaxes(
+        title="Sales (Lakhs)",
+        range=[
+            0,
+            (max_sales / 100000) * 1.20
+        ]
+    )
+
+    fig.update_xaxes(title="Month")
+
+    fig = y_axis_format(fig)
+
+    return _apply_layout(fig, height=320)
 # ---------------------------------------------------------------------------
 # 3. Quarterly Sales
 # ---------------------------------------------------------------------------
 def quarterly_sales_chart(monthly_df: pd.DataFrame) -> go.Figure:
+    """
+    Quarterly Sales Performance
+    Displays values in Lakhs while hover shows full ₹ amount.
+    """
+
     data = (
-        monthly_df.groupby(["Year", "Quarter"], as_index=False)
-        .agg(Sales=("Sales", "sum"), SortKey=("SortKey", "min"))
+        monthly_df
+        .groupby(["Year", "Quarter"], as_index=False)
+        .agg(
+            Sales=("Sales", "sum"),
+            SortKey=("SortKey", "min")
+        )
         .sort_values("SortKey")
+        .reset_index(drop=True)
     )
-    data["Label"] = data["Quarter"] + " '" + data["Year"].astype(str).str[-2:]
 
     fig = go.Figure()
+
     if data.empty:
-        fig.add_annotation(text="No data available", showarrow=False, font=dict(color=GREY))
-        return _apply_layout(fig, height=300)
+        fig.add_annotation(
+            text="No data available",
+            showarrow=False,
+            font=dict(color=GREY)
+        )
+        return _apply_layout(fig, height=320)
 
-    fig.add_trace(go.Bar(
-        x=data["Label"], y=data["Sales"],
-        marker_color=NAVY, marker_line_width=0,
-        text=[f"₹{v:,.0f}" for v in data["Sales"]],
-        textposition="outside", textfont=dict(size=10, color=NAVY),
-        hovertemplate="<b>%{x}</b><br>Total Sales: ₹%{y:,.0f}<extra></extra>",
-        showlegend=False,
-        width=0.55,
-    ))
-    fig.update_yaxes(range=[0, data["Sales"].max() * 1.25])
-    return _apply_layout(fig, height=300)
+    # Quarter Labels
+    data["QuarterLabel"] = (
+        data["Quarter"] +
+        " '" +
+        data["Year"].astype(str).str[-2:]
+    )
 
+    fig.add_trace(
+        go.Bar(
+            x=data["QuarterLabel"],
+            y=data["Sales"] / 100000,
 
+            marker=dict(
+                color=NAVY,
+                line=dict(width=0)
+            ),
+
+            width=0.55,
+
+            customdata=data["Sales"],
+
+            text=[format_lakh(v) for v in data["Sales"]],
+            textposition="outside",
+
+            textfont=dict(
+                size=10,
+                color=NAVY
+            ),
+
+            hovertemplate=
+            "<b>%{x}</b><br>"
+            "Quarter Sales : ₹%{customdata:,.0f}"
+            "<extra></extra>",
+
+            showlegend=False,
+        )
+    )
+
+    ymax = (data["Sales"].max() / 100000) * 1.25
+
+    fig.update_yaxes(
+        title="Sales (Lakhs)",
+        range=[0, ymax]
+    )
+
+    fig.update_xaxes(
+        title="Quarter"
+    )
+
+    fig = y_axis_format(fig)
+
+    return _apply_layout(fig, height=320)
 # ---------------------------------------------------------------------------
 # 4. Month-over-Month Growth %
 # ---------------------------------------------------------------------------
 def mom_growth_chart(monthly_df: pd.DataFrame) -> go.Figure:
+    """
+    Month-over-Month Growth (%)
+    Positive = Green
+    Negative = Red
+    """
+
     data = monthly_df.sort_values("SortKey").reset_index(drop=True).copy()
+
     data["MoM_Growth"] = data["Sales"].pct_change() * 100
 
-    plot_data = data.dropna(subset=["MoM_Growth"])
+    data = data.dropna(subset=["MoM_Growth"])
 
-    fig = go.Figure()
-    if plot_data.empty:
-        fig.add_annotation(text="Not enough months to compute growth",
-                            showarrow=False, font=dict(color=GREY))
-        return _apply_layout(fig, height=300)
-
-    colors = [GREEN if v >= 0 else RED for v in plot_data["MoM_Growth"]]
-
-    fig.add_trace(go.Bar(
-        x=plot_data["MonthLabel"], y=plot_data["MoM_Growth"],
-        marker_color=colors, marker_line_width=0,
-        text=[f"{v:+.1f}%" for v in plot_data["MoM_Growth"]],
-        textposition="outside", textfont=dict(size=10, color=NAVY),
-        hovertemplate="<b>%{x}</b><br>MoM Growth: %{y:.1f}%<extra></extra>",
-        showlegend=False,
-    ))
-    fig.add_hline(y=0, line_color="#D9E2EC", line_width=1.4)
-
-    y_pad = max(abs(plot_data["MoM_Growth"].max()), abs(plot_data["MoM_Growth"].min())) * 0.35
-    fig.update_yaxes(range=[plot_data["MoM_Growth"].min() - y_pad, plot_data["MoM_Growth"].max() + y_pad])
-    return _apply_layout(fig, height=300)
-
-
-# ---------------------------------------------------------------------------
-# 5. Forecast (actuals + trailing average + projected next month)
-# ---------------------------------------------------------------------------
-def forecast_chart(monthly_df: pd.DataFrame, forecast_info: dict) -> go.Figure:
-    data = monthly_df.sort_values("SortKey").reset_index(drop=True)
     fig = go.Figure()
 
     if data.empty:
-        fig.add_annotation(text="No data available", showarrow=False, font=dict(color=GREY))
-        return _apply_layout(fig, height=300)
+        fig.add_annotation(
+            text="Not enough data to calculate growth",
+            showarrow=False,
+            font=dict(color=GREY)
+        )
+        return _apply_layout(fig, height=320)
 
-    fig.add_trace(go.Scatter(
-        x=data["MonthLabel"], y=data["Sales"],
-        mode="lines+markers", name="Actual Sales",
-        line=dict(color=BLUE, width=3),
-        marker=dict(size=6, color=BLUE),
-        hovertemplate="<b>%{x}</b><br>Sales: ₹%{y:,.0f}<extra></extra>",
-    ))
+    colors = [
+        GREEN if x >= 0 else RED
+        for x in data["MoM_Growth"]
+    ]
 
-    next_label = "Next Month (F)"
-    forecast_x = list(data["MonthLabel"]) + [next_label]
-    forecast_y = [None] * (len(data) - 1) + [data.iloc[-1]["Sales"], forecast_info["forecast_value"]]
+    fig.add_trace(
+        go.Bar(
+            x=data["MonthLabel"],
+            y=data["MoM_Growth"],
 
-    fig.add_trace(go.Scatter(
-        x=forecast_x, y=forecast_y,
-        mode="lines+markers", name="Forecast",
-        line=dict(color=ACCENT, width=3, dash="dash"),
-        marker=dict(size=9, color=ACCENT, symbol="diamond"),
-        hovertemplate="<b>%{x}</b><br>Forecast: ₹%{y:,.0f}<extra></extra>",
-    ))
+            marker=dict(
+                color=colors,
+                line=dict(width=0)
+            ),
 
-    fig.add_annotation(
-        x=next_label, y=forecast_info["forecast_value"],
-        text=f"₹{forecast_info['forecast_value']:,.0f}",
-        showarrow=True, arrowhead=2, arrowcolor=ACCENT, ax=0, ay=-30,
-        font=dict(size=11, color=ACCENT, family="Segoe UI"),
+            text=[
+                f"{v:+.1f}%"
+                for v in data["MoM_Growth"]
+            ],
+
+            textposition="outside",
+
+            textfont=dict(
+                size=10,
+                color=NAVY
+            ),
+
+            hovertemplate=
+            "<b>%{x}</b><br>"
+            "Growth : %{y:.2f}%"
+            "<extra></extra>",
+
+            showlegend=False,
+        )
     )
 
-    return _apply_layout(fig, height=300)
+    fig.add_hline(
+        y=0,
+        line_color="#D9E2EC",
+        line_width=1.5,
+    )
+
+    ymax = data["MoM_Growth"].max()
+    ymin = data["MoM_Growth"].min()
+
+    padding = max(abs(ymax), abs(ymin)) * 0.30
+
+    fig.update_yaxes(
+        title="Growth (%)",
+        range=[
+            ymin - padding,
+            ymax + padding,
+        ]
+    )
+
+    fig.update_xaxes(
+        title="Month"
+    )
+
+    return _apply_layout(fig, height=320)
+# ---------------------------------------------------------------------------
+# 5. Forecast (Actual + Predicted)
+# ---------------------------------------------------------------------------
+def forecast_chart(monthly_df: pd.DataFrame, forecast_info: dict) -> go.Figure:
+    """
+    Forecast chart.
+
+    • Displays values in Lakhs / Crores
+    • Hover shows full ₹ value
+    """
+
+    data = monthly_df.sort_values("SortKey").reset_index(drop=True)
+
+    fig = go.Figure()
+
+    if data.empty:
+        fig.add_annotation(
+            text="No data available",
+            showarrow=False,
+            font=dict(color=GREY),
+        )
+        return _apply_layout(fig, height=320)
+
+    # ----------------------------------------------------
+    # Actual Sales
+    # ----------------------------------------------------
+    fig.add_trace(
+        go.Scatter(
+            x=data["MonthLabel"],
+            y=data["Sales"] / 100000,
+
+            mode="lines+markers",
+
+            line=dict(
+                color=BLUE,
+                width=3
+            ),
+
+            marker=dict(
+                size=7,
+                color=BLUE
+            ),
+
+            name="Actual Sales",
+
+            customdata=data["Sales"],
+
+            hovertemplate=
+            "<b>%{x}</b><br>"
+            "Sales : ₹%{customdata:,.0f}"
+            "<extra></extra>",
+        )
+    )
+
+    # ----------------------------------------------------
+    # Forecast Line
+    # ----------------------------------------------------
+    next_month = "Next Month"
+
+    x_values = list(data["MonthLabel"]) + [next_month]
+
+    y_values = (
+        [None] * (len(data) - 1)
+        + [
+            data.iloc[-1]["Sales"] / 100000,
+            forecast_info["forecast_value"] / 100000,
+        ]
+    )
+
+    custom_values = (
+        [None] * (len(data) - 1)
+        + [
+            data.iloc[-1]["Sales"],
+            forecast_info["forecast_value"],
+        ]
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=x_values,
+            y=y_values,
+
+            mode="lines+markers",
+
+            line=dict(
+                color=ACCENT,
+                width=3,
+                dash="dash",
+            ),
+
+            marker=dict(
+                size=9,
+                color=ACCENT,
+                symbol="diamond",
+            ),
+
+            name="Forecast",
+
+            customdata=custom_values,
+
+            hovertemplate=
+            "<b>%{x}</b><br>"
+            "Forecast : ₹%{customdata:,.0f}"
+            "<extra></extra>",
+        )
+    )
+
+    # ----------------------------------------------------
+    # Forecast Annotation
+    # ----------------------------------------------------
+    fig.add_annotation(
+        x=next_month,
+        y=forecast_info["forecast_value"] / 100000,
+
+        text=format_lakh(forecast_info["forecast_value"]),
+
+        showarrow=True,
+        arrowhead=2,
+        arrowcolor=ACCENT,
+
+        ax=0,
+        ay=-30,
+
+        font=dict(
+            size=11,
+            color=ACCENT,
+            family="Segoe UI",
+        ),
+    )
+
+    # ----------------------------------------------------
+    # Axis
+    # ----------------------------------------------------
+    fig.update_yaxes(
+        title="Sales (Lakhs)"
+    )
+
+    fig.update_xaxes(
+        title="Month"
+    )
+
+    fig = y_axis_format(fig)
+
+    return _apply_layout(fig, height=320)

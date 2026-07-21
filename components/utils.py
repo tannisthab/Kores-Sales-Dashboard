@@ -265,3 +265,22 @@ def format_inr_short(value) -> str:
         text = f"₹{value:.0f}"
 
     return f"-{text}" if negative else text
+def format_lakh(value):
+    """Returns values like 12.3 L or 2.45 Cr"""
+    value = float(value)
+
+    if abs(value) >= 10000000:      # 1 Crore
+        return f"{value/10000000:.2f} Cr"
+
+    elif abs(value) >= 100000:      # 1 Lakh
+        return f"{value/100000:.2f} L"
+
+    elif abs(value) >= 1000:
+        return f"{value/1000:.1f} K"
+
+    return f"{value:.0f}"
+
+
+def lakhs(value):
+    """Numeric value in lakhs."""
+    return value / 100000
