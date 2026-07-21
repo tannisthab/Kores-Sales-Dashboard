@@ -2,182 +2,220 @@
 ai_writer.py
 ------------
 Converts business metrics into executive-style business reports.
-
-Input:
-    metrics (dict)
-
-Output:
-    Dictionary containing all narrative sections for the dashboard.
 """
 
 from datetime import datetime
 
 
 # ==========================================================
-# Helper Functions
+# TREND SENTENCE
 # ==========================================================
 
-def _trend_sentence(trend: str) -> str:
+def _trend_sentence(trend):
+
     if trend == "Upward":
         return (
-            "Sales momentum has remained consistently positive throughout the "
-            "analysis period, indicating healthy customer demand and improving "
-            "business performance."
+            "Sales are showing a healthy upward trend with improving business "
+            "performance over the selected period."
         )
 
     elif trend == "Downward":
         return (
-            "Sales have shown a declining pattern over the analysed period, "
-            "suggesting reduced demand or changing market conditions that "
-            "require management attention."
+            "Sales have been declining over the selected period, indicating "
+            "reduced market demand or operational challenges."
         )
 
     return (
-        "Sales have remained relatively stable with only minor month-to-month "
-        "variations."
-    )
-
-
-def _risk_sentence(risk: str) -> str:
-    if risk == "Low":
-        return (
-            "Current business risk is considered low based on the consistency "
-            "of sales and forecast confidence."
-        )
-
-    elif risk == "Medium":
-        return (
-            "Moderate business risk exists due to fluctuations in recent sales. "
-            "Close monitoring is recommended."
-        )
-
-    return (
-        "Business risk is relatively high because of unstable sales trends and "
-        "forecast uncertainty."
+        "Sales remain relatively stable without any major upward or downward movement."
     )
 
 
 # ==========================================================
-# Executive Summary
+# RISK SENTENCE
 # ==========================================================
 
-def executive_summary(metrics: dict):
+def _risk_sentence(metrics):
+
+    text = (
+        f"Business risk is currently assessed as "
+        f"{metrics['risk']} with "
+        f"{metrics['forecast_confidence']} forecast confidence."
+    )
+
+    if metrics["volatility"] > 0.35:
+        text += (
+            " High month-to-month variation suggests unstable customer demand."
+        )
+
+    elif metrics["volatility"] > 0.20:
+        text += (
+            " Moderate fluctuations should be monitored closely."
+        )
+
+    else:
+        text += (
+            " Sales remain reasonably consistent across months."
+        )
+
+    return text
+
+
+# ==========================================================
+# EXECUTIVE SUMMARY
+# ==========================================================
+
+def executive_summary(metrics):
 
     return (
-        f"Business Health Score is {metrics['health_score']}/100 "
+
+        f"The overall Business Health Score is "
+        f"{metrics['health_score']}/100 "
         f"({metrics['rating']}). "
+
         f"{_trend_sentence(metrics['trend'])} "
-        f"Overall sales growth stands at "
-        f"{metrics['overall_growth']:.1f}% with "
-        f"{metrics['positive_growth_months']} positive growth months. "
-        f"{_risk_sentence(metrics['risk'])}"
+
+        f"Overall sales changed by "
+        f"{metrics['overall_growth']:.1f}% during the selected period. "
+
+        f"{metrics['positive_growth_months']} months recorded positive growth, "
+        f"while {metrics['negative_growth_months']} months showed a decline. "
+
+        f"{_risk_sentence(metrics)}"
     )
 
 
 # ==========================================================
-# Sales Analysis
+# SALES ANALYSIS
 # ==========================================================
 
-def sales_analysis(metrics: dict):
+def sales_analysis(metrics):
 
-    return (
-        f"The highest sales were recorded during "
-        f"{metrics['highest_month']}, while "
-        f"{metrics['lowest_month']} experienced the weakest performance. "
-        f"The overall sales trend is {metrics['trend'].lower()}, "
-        f"supported by an average monthly sales value of "
-        f"₹{metrics['average_sales']:,.0f}."
+    text = (
+
+        f"The highest sales were achieved in "
+        f"{metrics['highest_month']}, whereas "
+        f"{metrics['lowest_month']} recorded the lowest sales. "
+
+        f"The best-performing category is "
+        f"{metrics['best_category']}, contributing "
+        f"{metrics['best_category_share']:.1f}% of total revenue. "
+
+        f"The leading product is "
+        f"{metrics['best_product']}."
     )
 
+    if metrics["zero_sales_count"] > 0:
 
-# ==========================================================
-# Inventory Recommendation
-# ==========================================================
-
-def inventory_recommendation(metrics: dict):
-
-    if metrics["trend"] == "Upward":
-
-        return (
-            "Increase inventory levels for high-performing products. "
-            "Recent demand indicates continued sales momentum, and maintaining "
-            "additional safety stock may help prevent stock shortages."
+        text += (
+            f" Additionally, "
+            f"{metrics['zero_sales_count']} product(s) generated zero sales "
+            f"and should be reviewed."
         )
 
-    elif metrics["trend"] == "Downward":
-
-        return (
-            "Maintain conservative inventory levels until demand stabilises. "
-            "Avoid overstocking products with declining sales."
-        )
-
-    return (
-        "Maintain current inventory levels while closely monitoring "
-        "monthly demand fluctuations."
-    )
+    return text
 
 
 # ==========================================================
-# Revenue Opportunity
+# INVENTORY RECOMMENDATION
 # ==========================================================
 
-def revenue_opportunity(metrics: dict):
+def inventory_recommendation(metrics):
 
-    return (
-        f"The '{metrics['best_category']}' category currently delivers the "
-        f"strongest sales performance. Additional marketing campaigns, "
-        f"cross-selling initiatives, or promotional activities focused on "
-        f"this category may generate further revenue growth."
-    )
+    return metrics["inventory_strategy"]
 
 
 # ==========================================================
-# Risk Analysis
+# REVENUE OPPORTUNITY
 # ==========================================================
 
-def risk_analysis(metrics: dict):
+def revenue_opportunity(metrics):
 
-    return (
-        f"Business risk is currently classified as "
+    return metrics["revenue_opportunity"]
+# ==========================================================
+# RISK ANALYSIS
+# ==========================================================
+
+def risk_analysis(metrics):
+
+    text = (
+        f"Overall business risk is assessed as "
         f"{metrics['risk']}. "
-        f"Forecast confidence is "
-        f"{metrics['forecast_confidence']}. "
-        f"Management should continue monitoring demand patterns and "
-        f"inventory movement to minimise operational risk."
     )
 
+    if metrics["decline_reason"]:
+
+        text += "The primary observations are: "
+
+        for i, reason in enumerate(metrics["decline_reason"], start=1):
+            text += f"{i}. {reason}. "
+
+    if metrics["forecast_confidence"] == "Low":
+
+        text += (
+            "Since forecast confidence is low, management should closely "
+            "monitor market demand before making procurement decisions."
+        )
+
+    elif metrics["forecast_confidence"] == "Moderate":
+
+        text += (
+            "Forecast reliability is moderate. Monthly review of sales "
+            "performance is recommended."
+        )
+
+    else:
+
+        text += (
+            "Forecast confidence is high, indicating relatively predictable "
+            "sales behaviour."
+        )
+
+    return text
+
 
 # ==========================================================
-# Action Items
+# ACTION ITEMS
 # ==========================================================
 
-def action_items(metrics: dict):
+def action_items(metrics):
 
-    actions = []
+    # analyse_business already generates intelligent actions.
+    actions = list(metrics["action_items"])
 
-    if metrics["trend"] == "Upward":
-        actions.append("Increase inventory for high-demand products.")
+    if metrics["forecast_confidence"] == "Low":
+        actions.append(
+            "Prepare contingency plans for unexpected demand fluctuations."
+        )
 
-    if metrics["overall_growth"] < 0:
-        actions.append("Investigate reasons for declining sales.")
+    if metrics["overall_growth"] > 10:
+        actions.append(
+            "Increase production capacity to support future growth."
+        )
 
-    if metrics["risk"] != "Low":
-        actions.append("Review pricing and promotional strategy.")
+    if metrics["overall_growth"] < -10:
+        actions.append(
+            "Review pricing strategy and distributor performance."
+        )
 
-    actions.extend([
-        "Monitor monthly sales performance.",
-        "Review forecast before procurement decisions.",
-        "Focus marketing efforts on the best-performing category."
-    ])
+    if metrics["zero_sales_count"] > 0:
+        actions.append(
+            "Analyse zero-selling products for discontinuation or relaunch."
+        )
 
-    return actions[:5]
+    # Remove duplicates while preserving order
+    unique = []
+    for item in actions:
+        if item not in unique:
+            unique.append(item)
+
+    return unique[:6]
 
 
 # ==========================================================
-# Generate Complete Report
+# GENERATE COMPLETE REPORT
 # ==========================================================
 
-def generate_report(metrics: dict):
+def generate_report(metrics):
 
     return {
 
@@ -187,15 +225,21 @@ def generate_report(metrics: dict):
 
         "rating": metrics["rating"],
 
-        "executive_summary": executive_summary(metrics),
+        "executive_summary":
+            executive_summary(metrics),
 
-        "sales_analysis": sales_analysis(metrics),
+        "sales_analysis":
+            sales_analysis(metrics),
 
-        "inventory_recommendation": inventory_recommendation(metrics),
+        "inventory_recommendation":
+            inventory_recommendation(metrics),
 
-        "revenue_opportunity": revenue_opportunity(metrics),
+        "revenue_opportunity":
+            revenue_opportunity(metrics),
 
-        "risk_analysis": risk_analysis(metrics),
+        "risk_analysis":
+            risk_analysis(metrics),
 
-        "action_items": action_items(metrics)
+        "action_items":
+            action_items(metrics)
     }
